@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Time Logger</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 28px;
+        }
+
+        button {
+            width: 100%;
+            padding: 16px 24px;
+            font-size: 18px;
+            font-weight: 600;
+            color: white;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.2s;
+            margin-bottom: 30px;
+            touch-action: manipulation;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        button:hover {
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .logs {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .log-entry {
+            padding: 12px;
+            background: white;
+            border-left: 4px solid #667eea;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            color: #333;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .log-entry:last-child {
+            margin-bottom: 0;
+        }
+
+        .log-entry .time {
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .log-entry .count {
+            color: #999;
+            margin-left: 10px;
+        }
+
+        .elapsed-time {
+            display: block;
+            font-size: 12px;
+            color: #999;
+            margin-top: 6px;
+            font-weight: normal;
+            font-style: italic;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #999;
+            padding: 20px;
+            font-size: 14px;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 24px;
+            }
+
+            h1 {
+                font-size: 24px;
+                margin-bottom: 20px;
+            }
+
+            button {
+                padding: 14px 20px;
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⏱️ Time Logger</h1>
+        <button id="logBtn">Tap to Log Time</button>
+        <div class="logs" id="logsList">
+            <div class="empty-state">No logs yet. Tap the button to start!</div>
+        </div>
+        <button id="clearBtn" style="margin-top: 20px; background: #ff6b6b; display: none;">Clear Logs</button>
+    </div>
+
+    <script>
+        const logsList = document.getElementById('logsList');
+        const logBtn = document.getElementById('logBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const STORAGE_KEY = 'time_logs';
+
+        function formatTime(date) {
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            const seconds = String(date.getSeconds()).padStart(2, '0');
+            return `${hours}:${minutes}:${seconds}`;
+        }
+
+        function formatElapsedTime(ms) {
+            const totalSeconds = Math.floor(ms / 1000);
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+
+            if (hours > 0) {
+                return `+${hours}h ${minutes}m ${seconds}s`;
+            } else if (minutes > 0) {
+                return `+${minutes}m ${seconds}s`;
+            } else {
+                return `+${seconds}s`;
+            }
+        }
+
+        function getLogs() {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            return stored ? JSON.parse(stored) : [];
+        }
+
+        function saveLogs(logs) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
+        }
+
+        function renderLogs(logs) {
+            logsList.innerHTML = '';
+            if (logs.length === 0) {
+                logsList.innerHTML = '<div class="empty-state">No logs yet. Tap the button to start!</div>';
+                clearBtn.style.display = 'none';
+            } else {
+                logs.forEach((timestamp, index) => {
+                    const date = new Date(timestamp);
+                    const timeStr = formatTime(date);
+                    const logEntry = document.createElement('div');
+                    logEntry.className = 'log-entry';
+                    logEntry.innerHTML = `<span class="time">${timeStr}</span><span class="count">#${index + 1}</span>`;
+                    
+                    // Add elapsed time from previous entry
+                    if (index > 0) {
+                        const prevTimestamp = new Date(logs[index - 1]);
+                        const elapsed = timestamp - prevTimestamp.getTime();
+                        const elapsedStr = formatElapsedTime(elapsed);
+                        const elapsedSpan = document.createElement('span');
+                        elapsedSpan.className = 'elapsed-time';
+                        elapsedSpan.textContent = elapsedStr;
+                        logEntry.appendChild(elapsedSpan);
+                    }
+                    
+                    logsList.appendChild(logEntry);
+                });
+                clearBtn.style.display = 'block';
+            }
+        }
+
+        function addLog() {
+            const now = new Date();
+            const logs = getLogs();
+            logs.push(now.getTime());
+            saveLogs(logs);
+            renderLogs(logs);
+        }
+
+        function clearLogs() {
+            if (confirm('Delete all logs?')) {
+                saveLogs([]);
+                renderLogs([]);
+            }
+        }
+
+        // Load logs on page load
+        renderLogs(getLogs());
+
+        logBtn.addEventListener('click', addLog);
+        logBtn.addEventListener('touchstart', addLog);
+        clearBtn.addEventListener('click', clearLogs);
+    </script>
+</body>
+</html>
