@@ -221,6 +221,7 @@
             logs.push(now.getTime());
             saveLogs(logs);
             renderLogs(logs);
+            logsList.scrollTop = logsList.scrollHeight;
         }
 
         function clearLogs() {
@@ -233,7 +234,6 @@
         // Load logs on page load
         renderLogs(getLogs());
 
-        logBtn.addEventListener('click', addLog);
         logBtn.addEventListener('touchstart', addLog);
         clearBtn.addEventListener('click', clearLogs);
     </script>
