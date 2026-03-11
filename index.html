@@ -234,7 +234,21 @@
         // Load logs on page load
         renderLogs(getLogs());
 
-        logBtn.addEventListener('touchstart', addLog);
+        // Support both touch and mouse interaction for the log button
+        if (window.PointerEvent) {
+            logBtn.addEventListener('pointerup', (event) => {
+                if (event.pointerType === 'mouse' || event.pointerType === 'touch' || event.pointerType === 'pen') {
+                    addLog();
+                }
+            });
+        } else {
+            logBtn.addEventListener('touchstart', (event) => {
+                event.preventDefault(); // avoid ghost click on old browsers
+                addLog();
+            });
+            logBtn.addEventListener('click', addLog);
+        }
+
         clearBtn.addEventListener('click', clearLogs);
     </script>
 </body>
